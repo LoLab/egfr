@@ -45,4 +45,19 @@ def erbb_reclayer_monomers():
 def rec_events():
     """ TEXT HERE
     """
+    # binding to receptors
+    bind_table([[              EGF,       HRG],
+                [ERBB1,  (1.0,1.0),      None],
+                [ERBB3,       None, (1.0,1.0)],
+                [ERBB4,       None, (1.0,1.0)],
+                ])
     
+    # erbb dimerization
+    bind_table([[                ERBB1,          ERBB2,          ERBB3,          ERBB4],
+                [ERBB1, (kdimf, kdimr), (kdimf, kdimr), (kdimf, kdimr), (kdimf, kdimr)],
+                [ERBB2, (kdimf, kdimr), (kdimf, kdimr), (kdimf, kdimr), (kdimf, kdimr)],
+                [ERBB3, (kdimf, kdimr), (kdimf, kdimr),           None, (kdimf, kdimr)],
+                [ERBB4, (kdimf, kdimr), (kdimf, kdimr), (kdimf, kdimr), (kdimf, kdimr)]
+                ])
+
+ 
