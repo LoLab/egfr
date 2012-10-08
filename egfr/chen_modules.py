@@ -32,10 +32,10 @@ def erbb_reclayer_monomers():
     """
     Monomer('EGF', ['bf']) # Epidermal Growth Factor ligand
     Monomer('HRG', ['bf']) # Heregulin ligand
-    Monomer('ERBB1', ['bf'])
-    Monomer('ERBB2', ['bf'])
-    Monomer('ERBB3', ['bf'])
-    Monomer('ERBB4', ['bf'])
+    Monomer('erbb1', ['bf'])
+    Monomer('erbb2', ['bf'])
+    Monomer('erbb3', ['bf'])
+    Monomer('erbb4', ['bf'])
     Monomer('DEP1', ['bf'])
     Monomer('DEP2', ['bf'])
     Monomer('DEP3', ['bf'])
@@ -47,17 +47,25 @@ def rec_events():
     """
     # binding to receptors
     bind_table([[              EGF,       HRG],
-                [ERBB1,  (1.0,1.0),      None],
-                [ERBB3,       None, (1.0,1.0)],
-                [ERBB4,       None, (1.0,1.0)],
+                [erbb1,  (1.0,1.0),      None],
+                [erbb3,       None, (1.0,1.0)],
+                [erbb4,       None, (1.0,1.0)],
                 ])
     
     # erbb dimerization
-    bind_table([[                ERBB1,          ERBB2,          ERBB3,          ERBB4],
-                [ERBB1, (kdimf, kdimr), (kdimf, kdimr), (kdimf, kdimr), (kdimf, kdimr)],
-                [ERBB2, (kdimf, kdimr), (kdimf, kdimr), (kdimf, kdimr), (kdimf, kdimr)],
-                [ERBB3, (kdimf, kdimr), (kdimf, kdimr),           None, (kdimf, kdimr)],
-                [ERBB4, (kdimf, kdimr), (kdimf, kdimr), (kdimf, kdimr), (kdimf, kdimr)]
+    bind_table([[                erbb1,          erbb2,          erbb3,          erbb4],
+                [erbb1, (kdimf, kdimr), (kdimf, kdimr), (kdimf, kdimr), (kdimf, kdimr)],
+                [erbb2, (kdimf, kdimr), (kdimf, kdimr), (kdimf, kdimr), (kdimf, kdimr)],
+                [erbb3, (kdimf, kdimr), (kdimf, kdimr),           None, (kdimf, kdimr)],
+                [erbb4, (kdimf, kdimr), (kdimf, kdimr), (kdimf, kdimr), (kdimf, kdimr)]
                 ])
 
- 
+    # ATP binding
+    bind_table([[            ATP],
+                [erbb1, (kf, kr)],
+                [erbb2, (kf, kr)],
+                [erbb4, (kf, kr)]
+                ])
+                
+    # Receptor cross phosphorylation
+    

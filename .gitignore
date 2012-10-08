@@ -1,0 +1,13 @@
+*~
+.DS_Store
+*.swp
+*.pyc
+parser.out
+bng_files/*
+build/*
+dist/*
+doc/_build
+MANIFEST
+RELEASE-VERSION
+.idea
+.#*
