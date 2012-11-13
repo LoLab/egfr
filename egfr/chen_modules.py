@@ -40,7 +40,7 @@ def erbb_reclayer_monomers():
     """
     Monomer('EGF', ['b']) # Epidermal Growth Factor ligand
     Monomer('HRG', ['b']) # Heregulin ligand
-    Monomer('erbb', ['bl', 'bd', 'ba', 'ty', 'st', 'loc'], {'ty':['1','2','3','4'], 'st':['U','P'], 'loc':['C','E']}) # bl: lig, bd: dimer, ba: atp, ty: rec type, st: (U)n(P)hosphorylated, loc: (C)yto 'brane or (E)ndosome 'brane
+    Monomer('erbb', ['bl', 'bd', 'ba', 'bc', 'ty', 'st', 'loc'], {'ty':['1','2','3','4'], 'st':['U','P'], 'loc':['C','E']}) # bl: lig, bd: dimer, ba: atp, ty: rec type, st: (U)n(P)hosphorylated, loc: (C)yto 'brane or (E)ndosome 'brane
     Monomer('DEP', ['b'])
     Monomer('ATP', ['b'])
 
@@ -56,7 +56,7 @@ def rec_events():
     alias_model_components()
     
     # binding to receptors
-    bind_table([[                    EGF,       HRG],
+    bind_table([[                              EGF,       HRG],
                 [erbb(ty='1', loc='C'),  (1.0,1.0),      None],
                 [erbb(ty='3', loc='C'),       None, (1.0,1.0)],
                 [erbb(ty='4', loc='C'),       None, (1.0,1.0)]],
@@ -86,8 +86,17 @@ def rec_events():
                 Parameter("kc"+i+j, KC))
 
     # Receptor Dephosphorylation
-    Rule("dephospho",
-         erbb(st='P') + DEP(
+    for i in ['1','2','3','4']:
+        Rule("dephospho_"+i+"_"+j,
+             erbb(st='P', bc=None, ty=i) + DEP(b=None, ty=i) <>
+             erbb(st='P', bc=1, ty=i) % DEP(b=1, ty=i),
+             KF, KR)
+        Rule("dephosphoC_"+i+"_"+j,
+             erbb(st='P', bc=1, ty=i) % DEP(b=1, ty=i) >>
+             erbb(st='U', bc=None, ty=i) + DEP(b=None, ty=i)
+             KC)
+        
+             
 
 
     # Receptor internalization
@@ -97,5 +106,6 @@ def rec_events():
          Parameter("kintf", KINTF), Parameter("kintr", KINTR))
 
     # Receptor degradation
-    # This degrades all receptor combis within an endosome
+    # This degrades all receptor combos within an endosome
     degrade(erbb(loc="E"), Parameter("kdeg", KDEG))
+    
