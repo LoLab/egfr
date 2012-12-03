@@ -86,6 +86,11 @@ def rec_events():
                 Parameter("kc"+i+j, KC))
 
     # Receptor Dephosphorylation
+    # DEPHOSPHORYLATION: 
+    #  * Density enhanced phosphatase1 (DEP1) dephosphorylates ERB1 (at the cell-membrane)
+    #  * Protein Tyrosine Phosphatase1b (PTP1b) dephosphorylates all RTKs (at the endo-membrane)
+    #  Bursett, TA, Hoier, EF, Hajnal, A: Genes Dev. 19:1328-1340 (2005)
+    #  Haj, FG, Verver, PJ, Squire, A, Neel, BG, Bastiaens, PI: Science 295:1708-1711 (2002)
     for i in ['1','2','3','4']:
         Rule("dephospho_"+i+"_"+j,
              erbb(st='P', bc=None, ty=i) + DEP(b=None, ty=i) <>
@@ -96,9 +101,6 @@ def rec_events():
              erbb(st='U', bc=None, ty=i) + DEP(b=None, ty=i)
              KC)
         
-             
-
-
     # Receptor internalization
     # This internalizes all receptor combos 
     Rule("rec_intern",
@@ -108,4 +110,17 @@ def rec_events():
     # Receptor degradation
     # This degrades all receptor combos within an endosome
     degrade(erbb(loc="E"), Parameter("kdeg", KDEG))
+
+def mapk_monomers():
+    Monomer('SHC', [b])
+    Monomer('SHCPase', [b])
+    Monomer('GRB2', [b])
+    Monomer('SOS', [b])
+    Monomer('RAS', [b])
+    Monomer('RAF', [b])
+    Monomer('MEK', [b])
+    Monomer('ERK', [b])
     
+
+def mapk_events():
+    pass
