@@ -34,24 +34,46 @@ KDEG = .1
 # Monomer declarations
 # ====================
 
-def erbb_reclayer_monomers():
+def rec_monomers():
     """ Declares the ErbB receptor interactions.
     'bf' is the default site to be used for all binding/catalysis reactions.
     """
     Monomer('EGF', ['b']) # Epidermal Growth Factor ligand
     Monomer('HRG', ['b']) # Heregulin ligand
-    Monomer('erbb', ['bl', 'bd', 'ba', 'bc', 'ty', 'st', 'loc'], {'ty':['1','2','3','4'], 'st':['U','P'], 'loc':['C','E']}) # bl: lig, bd: dimer, ba: atp, ty: rec type, st: (U)n(P)hosphorylated, loc: (C)yto 'brane or (E)ndosome 'brane
+    Monomer('erbb', ['bl', 'bd', 'bp', 'ty', 'st', 'loc'], {'ty':['1','2','3','4'], 'st':['U','P'], 'loc':['C','E']}) # bl: lig, bd: dimer, bp: atp, ty: rec type, st: (U)n(P)hosphorylated, loc: (C)yto 'brane or (E)ndosome 'brane
     Monomer('DEP', ['b'])
     Monomer('ATP', ['b'])
 
+def rec_initial():
+    """
+    STATE WHERE PARAMS CAME FROM
+    """
+    Parameter('EGF_0',   1000)
+    Parameter('HRG_0',   1000)
+    Parameter('erbb1_0', 1000)
+    Parameter('erbb2_0', 1000)
+    Parameter('erbb3_0', 1000)
+    Parameter('erbb4_0', 1000)
+    Parameter('DEP_0',   1000)
+    Parameter('ATP_0',   1000)
+
+    alias_model_components()
+
+    Initial(EGF(b=None), EGF_0)
+    Initial(HRG(b=None), HRG_0)
+    Initial(erbb(bl=None, bd=None, bp=None, ty='1', st='U', loc='C'), erbb1_0)
+    Initial(erbb(bl=None, bd=None, bp=None, ty='2', st='U', loc='C'), erbb2_0)
+    Initial(erbb(bl=None, bd=None, bp=None, ty='3', st='U', loc='C'), erbb3_0)
+    Initial(erbb(bl=None, bd=None, bp=None, ty='4', st='U', loc='C'), erbb4_0)
+    Initial(DEP(b=None), DEP_0)
+    Initial(ATP(b=None), ATP_0)
+            
 def rec_events():
-    """ TEXT HERE
+    """ Describe receptor-level events here. 
     """
 
     # Parameter definitions
     # =====================
-
-
     # Alias model components for names in present namespace
     alias_model_components()
     
@@ -75,15 +97,15 @@ def rec_events():
                 [erbb(ty='1', loc='C'), (KF, KR)],
                 [erbb(ty='2', loc='C'), (KF, KR)],
                 [erbb(ty='4', loc='C'), (KF, KR)]],
-        'ba', 'b')
+        'bp', 'b')
                 
     # Receptor Cross Phosphorylation
     for i in ['1','2','4']:
         for j in ['1','2','4']:
             Rule("cross_phospho_"+i+"_"+j,
-                erbb(ty=i, bd=1, ba=2) % erbb(ty=j, bd=1, st='U') >>
-                erbb(ty=i, bd=1, ba=2) % erbb(ty=j, bd=1, st='P'),
-                Parameter("kc"+i+j, KC))
+                erbb(ty=i, bd=1, bp=2) % erbb(ty=j, bd=1, st='U') >>
+                erbb(ty=i, bd=1, bp=2) % erbb(ty=j, bd=1, st='P'),
+                Parameter("kcp"+i+j, KC))
 
     # Receptor Dephosphorylation
     # DEPHOSPHORYLATION: 
@@ -93,23 +115,23 @@ def rec_events():
     #  Haj, FG, Verver, PJ, Squire, A, Neel, BG, Bastiaens, PI: Science 295:1708-1711 (2002)
     for i in ['1','2','3','4']:
         Rule("dephospho_"+i+"_"+j,
-             erbb(st='P', bc=None, ty=i) + DEP(b=None, ty=i) <>
-             erbb(st='P', bc=1, ty=i) % DEP(b=1, ty=i),
-             KF, KR)
+             erbb(st='P', bp=None, ty=i) + DEP(b=None) <>
+             erbb(st='P', bp=1, ty=i) % DEP(b=1),
+             Parameter('kfdephos'+i+j, KF),Parameter('krdephos'+i+j, KR))
         Rule("dephosphoC_"+i+"_"+j,
-             erbb(st='P', bc=1, ty=i) % DEP(b=1, ty=i) >>
-             erbb(st='U', bc=None, ty=i) + DEP(b=None, ty=i)
-             KC)
+             erbb(st='P', bp=1, ty=i) % DEP(b=1) >>
+             erbb(st='U', bp=None, ty=i) + DEP(b=None),
+             Parameter('kcdephos'+i+j, KC))
         
     # Receptor internalization
     # This internalizes all receptor combos 
     Rule("rec_intern",
-         erbb(loc="C") <> erbb(loc="E"),
+         erbb(bd=1, loc="C") % erbb(bd=1, loc='C') <> erbb(bd=1, loc="E") % erbb(bd=1, loc="E"),
          Parameter("kintf", KINTF), Parameter("kintr", KINTR))
 
     # Receptor degradation
     # This degrades all receptor combos within an endosome
-    degrade(erbb(loc="E"), Parameter("kdeg", KDEG))
+    degrade(erbb(bd=1, loc="E") % erbb(bd=1, loc="E"), Parameter("kdeg", KDEG))
 
 def mapk_monomers():
     Monomer('SHC', [b])
@@ -123,4 +145,9 @@ def mapk_monomers():
     
 
 def mapk_events():
-    pass
+
+    # =====================
+    # Alias model components for names in present namespace
+    alias_model_components()
+
+    
