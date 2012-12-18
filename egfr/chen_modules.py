@@ -19,7 +19,7 @@ from pysb.macros import *
 from pysb.util import alias_model_components
 #from egfr.shared import * # modified model aliases
 
-# Receptor Layer
+# Receptor Layer, 0
 
 # Default rates?
 KF = 1e-6
@@ -84,12 +84,14 @@ def rec_events():
                 [erbb(ty='4', loc='C'),       None, (1.0,1.0)]],
                 'bl', 'b')
     
+    # make this more readable:
+    
     # erbb dimerization
     bind_table([[                       erbb(ty='1', loc='C'), erbb(ty='2', loc='C'), erbb(ty='3', loc='C'), erbb(ty='4', loc='C')],
                 [erbb(ty='1', loc='C'),        (KDIMF, KDIMR),                  None,                  None,                  None],
                 [erbb(ty='2', loc='C'),        (KDIMF, KDIMR),        (KDIMF, KDIMR),                  None,                  None],
-                [erbb(ty='3', loc='C'),        (KDIMF, KDIMR),        (KDIMF, KDIMR),        (KDIMF, KDIMR),                  None],
-                [erbb(ty='4', loc='C'),        (KDIMF, KDIMR),        (KDIMF, KDIMR),        (KDIMF, KDIMR),        (KDIMF, KDIMR)]],
+                [erbb(ty='3', loc='C'),        (KDIMF, KDIMR),        (KDIMF, KDIMR),                  None,                  None],
+                [erbb(ty='4', loc='C'),        (KDIMF, KDIMR),        (KDIMF, KDIMR),                  None,                  None]],
         'bd', 'bd')
 
     # ATP binding
