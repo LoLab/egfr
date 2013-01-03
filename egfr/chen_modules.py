@@ -43,6 +43,7 @@ def rec_monomers():
     Monomer('erbb', ['bl', 'bd', 'bp', 'ty', 'st', 'loc'], {'ty':['1','2','3','4'], 'st':['U','P'], 'loc':['C','E']}) # bl: lig, bd: dimer, bp: atp, ty: rec type, st: (U)n(P)hosphorylated, loc: (C)yto 'brane or (E)ndosome 'brane
     Monomer('DEP', ['b'])
     Monomer('ATP', ['b'])
+    Monomer('ADP', ['b'])
 
 def rec_initial():
     """
@@ -105,8 +106,8 @@ def rec_events():
     for i in ['1','2','4']:
         for j in ['1','2','4']:
             Rule("cross_phospho_"+i+"_"+j,
-                erbb(ty=i, bd=1, bp=2) % erbb(ty=j, bd=1, st='U') >>
-                erbb(ty=i, bd=1, bp=2) % erbb(ty=j, bd=1, st='P'),
+                ATP(b=2) % erbb(ty=i, bd=1, bp=2) % erbb(ty=j, bd=1, st='U') >>
+                ADP() % erbb(ty=i, bd=1, bp=2) % erbb(ty=j, bd=1, st='P'),
                 Parameter("kcp"+i+j, KC))
 
     # Receptor Dephosphorylation
@@ -134,6 +135,8 @@ def rec_events():
     # Receptor degradation
     # This degrades all receptor combos within an endosome
     degrade(erbb(bd=1, loc="E") % erbb(bd=1, loc="E"), Parameter("kdeg", KDEG))
+
+    # FIXME:need negative feedback from ERK and AKT. include that in the other modules?
 
 def mapk_monomers():
     Monomer('SHC', [b])
