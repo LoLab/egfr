@@ -79,7 +79,7 @@ def rec_events():
     alias_model_components()
     
     # binding to receptors
-    bind_table([[                              EGF,       HRG],
+    bind_table([[                                              EGF,       HRG],
                 [erbb(ty='1', b=None, st='U', loc='C'),  (1.0,1.0),      None],
                 [erbb(ty='3', b=None, st='U', loc='C'),       None, (1.0,1.0)],
                 [erbb(ty='4', b=None, st='U', loc='C'),       None, (1.0,1.0)]],
@@ -108,8 +108,8 @@ def rec_events():
     for i in ['1','2','4']:
         for j in ['1','2','3','4']:
             Rule("cross_phospho_"+i+"_"+j,
-                 ATP(b=1) % erbb(ty=i, b=1,    bd=2, bl=ANY) % erbb(ty=j, bd=2, st='U') >>
-                 ADP()    + erbb(ty=i, b=None, bd=2, bl=ANY) % erbb(ty=j, bd=2, st='P'),
+                 ATP(b=1) % erbb(ty=i, b=1,    bd=2) % erbb(ty=j, bd=2, st='U') >>
+                 ADP()    + erbb(ty=i, b=None, bd=2) % erbb(ty=j, bd=2, st='P'),
                  Parameter("kcp"+i+j, KC))
                 
     # Receptor Dephosphorylation
@@ -120,11 +120,11 @@ def rec_events():
     #  Haj, FG, Verver, PJ, Squire, A, Neel, BG, Bastiaens, PI: Science 295:1708-1711 (2002)
     # FIXME: REPLACE W A NEW CATALYSIS TABLE????
     for i in ['1','2','3','4']:
-        Rule("dephospho_"+i+"_"+j,
+        Rule("dephosphoBind_"+i+"_"+j,
              erbb(st='P', b=None, ty=i) + DEP(b=None) <>
              erbb(st='P', b=1, ty=i) % DEP(b=1),
              Parameter('kfdephos'+i+j, KF),Parameter('krdephos'+i+j, KR))
-        Rule("dephosphoC_"+i+"_"+j,
+        Rule("dephosphoCat_"+i+"_"+j,
              erbb(st='P', b=1, ty=i) % DEP(b=1) >>
              erbb(st='U', b=None, ty=i) + DEP(b=None),
              Parameter('kcdephos'+i+j, KC))
@@ -132,18 +132,18 @@ def rec_events():
     # Receptor internalization
     # This internalizes all receptor combos 
     Rule("rec_intern",
-         erbb(bd=1, loc="C") % erbb(bd=1, loc='C') <> erbb(bd=1, loc="E") % erbb(bd=1, loc="E"),
+         erbb(bd=1, loc='C') % erbb(bd=1, loc='C') <> erbb(bd=1, loc='E') % erbb(bd=1, loc='E'),
          Parameter("kintf", KINTF), Parameter("kintr", KINTR))
 
     # Receptor degradation
     # This degrades all receptor combos within an endosome
-    degrade(erbb(bd=1, loc="E") % erbb(bd=1, loc="E"), Parameter("kdeg", KDEG))
+    degrade(erbb(bd=1, loc='E') % erbb(bd=1, loc='E'), Parameter("kdeg", KDEG))
 
     # FIXME:need negative feedback from ERK and AKT. include that in the other modules?
 
 def mapk_monomers():
-    Monomer('GAP', ['b'])
-    # Monomer('SHC', ['b'])
+    Monomer('GAP', ['bd', 'b'])
+    Monomer('SHC', ['bgap', 'bgrb', 'st'], {'st':['U','P']})
     # Monomer('SHCPase', ['b'])
     # Monomer('GR2', ['b'])
     # Monomer('SOS', ['b'])
@@ -154,7 +154,7 @@ def mapk_monomers():
 
 def mapk_initial():
     Parameter('GAP_0', 1000)
-    # Parameter('SHC_0', 1000)
+    Parameter('SHC_0', 1000)
     # Parameter('SHCPase_0', 1000)
     # Parameter('GRB2_0', 1000)
     # Parameter('SOS_0', 1000)
@@ -165,7 +165,8 @@ def mapk_initial():
 
     alias_model_components()
 
-    Initial(GAP(b=None), GAP_0)
+    Initial(GAP(bd=None, b=None), GAP_0)
+    Initial(SHC(bgap=None, bgrb=None, st='U'), SHC_0)
 
 def mapk_events():
 
@@ -177,7 +178,14 @@ def mapk_events():
     # in the present we use MatchOnce to insure correct representation of the binding
     # similar to Chen et al
     Rule("GAP_dimerization",
-         MatchOnce(erbb(bd=1, b=None, st='P') % erbb(bd=1, b=None, st='P')) + GAP(b=None) <>
-         MatchOnce(erbb(bd=1, b=2,    st="P") % erbb(bd=1, b=None, st="P")  % GAP(b=2)),
+         MatchOnce(erbb(bd=1, b=None, st='P') % erbb(bd=1, b=None, st='P')) + GAP(bd=None, b=None) <>
+         MatchOnce(erbb(bd=1, b=2,    st='P') % erbb(bd=1, b=None, st='P')  % GAP(bd=2, b=None)),
          Parameter("kerbb_dim_GAPf", KF), Parameter("kerbb_dim_GAPr", KR))
+    
+    # Shc binds to GAP-complex
+    Rule("Shc_bind_GAP",
+         GAP(bd=ANY, b=None) + SHC(bgap=None, bgrb=None, st='U') <>
+         GAP(bd=ANY, b=1   ) % SHC(bgap=1,    bgrb=None, st='U'),
+         Parameter("kShcGapf", KF), Parameter("kShcGapr", KR))
+         
     
