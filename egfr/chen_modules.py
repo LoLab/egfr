@@ -143,11 +143,11 @@ def rec_events():
 
 def mapk_monomers():
     Monomer('GAP', ['bd', 'b'])
-    Monomer('SHC', ['bgap', 'bgrb', 'st'], {'st':['U','P']})
+    Monomer('SHC', ['bgap', 'bgrb', 'batp', 'st'], {'st':['U','P']})
     # Monomer('SHCPase', ['b'])
-    # Monomer('GR2', ['b'])
-    # Monomer('SOS', ['b'])
-    # Monomer('RAS', ['b'])
+    Monomer('GRB2', ['bgap', 'bshc', 'bsos'])
+    Monomer('SOS', ['bgrb', 'bras'])
+    Monomer('RAS', ['bsos'])
     # Monomer('RAF', ['b'])
     # Monomer('MEK', ['b'])
     # Monomer('ERK', ['b'])
@@ -156,8 +156,8 @@ def mapk_initial():
     Parameter('GAP_0', 1000)
     Parameter('SHC_0', 1000)
     # Parameter('SHCPase_0', 1000)
-    # Parameter('GRB2_0', 1000)
-    # Parameter('SOS_0', 1000)
+    Parameter('GRB2_0', 1000)
+    Parameter('SOS_0', 1000)
     # Parameter('RAS_0', 1000)
     # Parameter('RAF_0', 1000)
     # Parameter('MEK_0', 1000)
@@ -166,7 +166,9 @@ def mapk_initial():
     alias_model_components()
 
     Initial(GAP(bd=None, b=None), GAP_0)
-    Initial(SHC(bgap=None, bgrb=None, st='U'), SHC_0)
+    Initial(SHC(bgap=None, bgrb=None, batp=None, st='U'), SHC_0)
+    Initial(GRB2(bgap=None, bshc=None, bsos=None), GRB2_0)
+    Initial(SOS(bgrb=None, bras=None), SOS_0)
 
 def mapk_events():
 
@@ -188,4 +190,32 @@ def mapk_events():
          GAP(bd=ANY, b=1   ) % SHC(bgap=1,    bgrb=None, st='U'),
          Parameter("kShcGapf", KF), Parameter("kShcGapr", KR))
          
-    
+    # ATP binds to SHC
+    Rule("ATP_bind_Shc",
+	 GAP(bd=ANY, b=1) % SHC(bgap=1, bgrb=None, batp=None, st='U') + ATP(b=None) <>
+         GAP(bd=ANY, b=1) % SHC(bgap=1, bgrb=None, batp=2, st='U') % ATP(b=2),
+         Parameter("kShcAtpf", KF), Parameter("kShcAtpr", KR))
+	
+    # Shc phosphorylation
+    Rule("Shc_Catalyze",
+	GAP(bd=ANY, b=1) % SHC(bgap=1, bgrb=None, batp=2, st='U') % ATP(b=2) >> 
+	GAP(bd=ANY, b=1) % SHC(bgap=1, bgrb=None, batp=None, st='P') + ATP(b=None),
+	Parameter("kShcAtpc", KC))
+
+    # Grb2 binds to GAP-SHC:P
+    Rule("Grb2_bind_Shc",
+         GAP(bd=ANY, b=1) % SHC(bgap=1, bgrb=None, batp=None, st='P') + GRB2(bgap=None, bshc=None, bsos=None) <>
+         GAP(bd=ANY, b=1) % SHC(bgap=1, bgrb=2, batp=None, st='P') % GRB2(bgap=None, bshc=2, bsos=None),
+         Parameter("kGrbShcf", KF), Parameter("kGrbShcr", KR))
+
+    # SOS binds to GAP-SHC:P-GRB2
+    Rule("SOS_bind_Grb2",
+         GAP(bd=ANY, b=1) % SHC(bgap=1, bgrb=2, batp=None, st='P') % GRB2(bgap=None, bshc=2, bsos=None) + SOS(bgrb=None, bras=None) <>
+         GAP(bd=ANY, b=1) % SHC(bgap=1, bgrb=2, batp=None, st='P') % GRB2(bgap=None, bshc=2, bsos=3) % SOS(bgrb=3, bras=None),
+         Parameter("kSosGrb2f", KF), Parameter("kSosGrb2r", KR))
+
+    # Ras-GDP binds to Gap-SHC:P-GRB2-SOS
+    #Rule("Ras_bind_SOS",
+    #GAP(bd=ANY, b=1) % SHC(bgap=1, bgrb=2, batp=None, st='P') % GRB2(bgap=None, bshc=2, bsos=3) % SOS(bgrb=3, bras=None) + RAS
+         
+        
