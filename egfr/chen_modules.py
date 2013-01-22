@@ -148,9 +148,12 @@ def mapk_monomers():
     Monomer('GRB2', ['b', 'bsos'])
     Monomer('SOS', ['bgrb', 'bras'])
     Monomer('RAS', ['bsos', 'braf', 'st'], {'st':['GDP', 'GTPU', 'GTPP']})
-    # Monomer('RAF', ['b'])
-    # Monomer('MEK', ['b'])
-    # Monomer('ERK', ['b'])
+    Monomer('RAF', ['b', 'st'], {'st':['U', 'P']})
+    # Monomer('PP1', ['b'])
+    # Monomer('PP2', ['b'])
+    # Monomer('PP3', ['b'])
+    Monomer('MEK', ['b', 'st'], {'st':['U', 'P', 'PP']})
+    Monomer('ERK', ['b', 'st'], {'st':['U', 'P', 'PP']})
 
 def mapk_initial():
     Parameter('GAP_0', 1000)
@@ -159,9 +162,12 @@ def mapk_initial():
     Parameter('GRB2_0', 1000)
     Parameter('SOS_0', 1000)
     Parameter('RAS_0', 1000)
-    # Parameter('RAF_0', 1000)
-    # Parameter('MEK_0', 1000)
-    # Parameter('ERK_0', 1000)
+    Parameter('RAF_0', 1000)
+    # Parameter('PP1_0', 1000)
+    # Parameter('PP2_0', 1000)
+    # Parameter('PP3_0', 1000)
+    Parameter('MEK_0', 1000)
+    Parameter('ERK_0', 1000)
 
     alias_model_components()
 
@@ -170,7 +176,14 @@ def mapk_initial():
     Initial(GRB2(b=None, bsos=None), GRB2_0)
     Initial(SOS(bgrb=None, bras=None), SOS_0)
     Initial(RAS(bsos=None, braf=None, st='GDP'), RAS_0)
+    Initial(RAF(b=None, st='U'), RAF_0)
+    Initial(MEK(b=None, st='U'), MEK_0)
+    Initial(ERK(b=None, st='U'), ERK_0)
+    # Initial(PP1(b=None), PP1_0)
+    # Initial(PP2(b=None), PP2_0)
+    # Initial(PP3(b=None), PP3_0)
 
+    
 def mapk_events():
 
     # =====================
@@ -186,7 +199,7 @@ def mapk_events():
          Parameter("kerbb_dim_GAPf", KF), Parameter("kerbb_dim_GAPr", KR))
     
     # SHC binds to GAP-complex
-    bind(GAP(bd=ANY), 'b', SHC(bgrb=None, batp=None, st='U'), 'bgap', [KF, KR])
+    bind(GAP(bd=ANY), 'b', SHC(batp=None, st='U'), 'bgap', [KF, KR])
 
     # SHC phosphorylation
     Rule("Shc_bind_ATP",
@@ -200,7 +213,7 @@ def mapk_events():
          Parameter("ShcPhosc", KC))
              
     # GRB2 binds to GAP-SHC:P
-    bind(SHC(batp=None, st='P'), 'bgrb', GRB2(bsos=None), 'b', [KF, KR])
+    bind(SHC(batp=None, st='P'), 'bgrb', GRB2(), 'b', [KF, KR])
 
     # SOS binds to GAP-SHC:P-GRB2
     bind(GRB2(b=ANY), 'bsos', SOS(bras=None), 'bgrb', [KF, KR])
@@ -208,20 +221,28 @@ def mapk_events():
     # RAS-GDP binds to GAP-SHC:P-GRB2-SOS
     bind(SOS(bgrb=ANY), 'bras', RAS(braf=None, st='GDP'), 'bsos',  [KF, KR])
 
-    # Rule("RAS_GDP_to_RAS_GTP",
-    #      GAP(bd=ANY, b=1) % SHC(bgap=1, bgrb=2, batp=None, st='P') % GRB2(b=2, bsos=3) % SOS(bgrb=3, bras=4) % RAS(bsos=4, braf=None, st='GDP') <>
-    #      GAP(bd=ANY, b=1) % SHC(bgap=1, bgrb=2, batp=None, st='P') % GRB2(b=2, bsos=3) % SOS(bgrb=3, bras=None) + RAS(bsos=None, braf=None, st='GTPU'),
-    #      Parameter("RasGDP_GTPf",KF), Parameter("RasGDP_GTPr",KR))
-    Rule("RAS_GDP_to_RAS_GTP",
+    # RAS-GDP dissociates from GAP complex to form RAS-GTPU
+    Rule("RAS_GDP_to_RAS_GTPU",
          SOS(bgrb=ANY, bras=4) % RAS(bsos=4, braf=None, st='GDP') <>
          SOS(bgrb=ANY, bras=None) + RAS(bsos=None, braf=None, st='GTPU'),
          Parameter("RasGDP_GTPf",KF), Parameter("RasGDP_GTPr",KR))
-    
 
-    
+    # Activation of RAF -> RAF* by RAS-GTP -- CHECK WITH CARLOS
+    catalyze(RAS(bsos=None, st='GTPU'), 'braf', RAF(st='U'), 'b', RAF(st='P'),
+             (KF,KR,KC))
 
+    # Activation of MEK -> MEK:P by activated RAF
+    catalyze(RAF(st='P'), 'b', MEK(st='U'), 'b', MEK(st='P'),
+             (KF,KR,KC))
     
-    #Rule("Ras_bind_SOS",
-    #GAP(bd=ANY, b=1) % SHC(bgap=1, bgrb=2, batp=None, st='P') % GRB2(bgap=None, bshc=2, bsos=3) % SOS(bgrb=3, bras=None) + RAS
-         
-        
+    # Activation of MEK:P -> MEK:P:P by activated RAF
+    catalyze(RAF(st='P'), 'b', MEK(st='P'), 'b', MEK(st='PP'),
+             (KF,KR,KC))
+
+    # Activation of ERK -> ERK:P by activated MEK:P:P
+    catalyze(MEK(st='PP'), 'b', ERK(st='U'), 'b', ERK(st='P'),
+             (KF,KR,KC))
+
+    # Activation of ERK:P -> ERK:P:P by activated MEK:P:P
+    catalyze(MEK(st='PP'), 'b', ERK(st='P'), 'b', ERK(st='PP'),
+             (KF,KR,KC))
