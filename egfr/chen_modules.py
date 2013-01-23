@@ -149,9 +149,9 @@ def mapk_monomers():
     Monomer('SOS', ['bgrb', 'bras'])
     Monomer('RAS', ['bsos', 'braf', 'st'], {'st':['GDP', 'GTPU', 'GTPP']})
     Monomer('RAF', ['b', 'st'], {'st':['U', 'P']})
-    # Monomer('PP1', ['b'])
-    # Monomer('PP2', ['b'])
-    # Monomer('PP3', ['b'])
+    Monomer('PP1', ['b'])
+    Monomer('PP2', ['b'])
+    Monomer('PP3', ['b'])
     Monomer('MEK', ['b', 'st'], {'st':['U', 'P', 'PP']})
     Monomer('ERK', ['b', 'st'], {'st':['U', 'P', 'PP']})
 
@@ -163,9 +163,9 @@ def mapk_initial():
     Parameter('SOS_0', 1000)
     Parameter('RAS_0', 1000)
     Parameter('RAF_0', 1000)
-    # Parameter('PP1_0', 1000)
-    # Parameter('PP2_0', 1000)
-    # Parameter('PP3_0', 1000)
+    Parameter('PP1_0', 1000)
+    Parameter('PP2_0', 1000)
+    Parameter('PP3_0', 1000)
     Parameter('MEK_0', 1000)
     Parameter('ERK_0', 1000)
 
@@ -179,9 +179,9 @@ def mapk_initial():
     Initial(RAF(b=None, st='U'), RAF_0)
     Initial(MEK(b=None, st='U'), MEK_0)
     Initial(ERK(b=None, st='U'), ERK_0)
-    # Initial(PP1(b=None), PP1_0)
-    # Initial(PP2(b=None), PP2_0)
-    # Initial(PP3(b=None), PP3_0)
+    Initial(PP1(b=None), PP1_0)
+    Initial(PP2(b=None), PP2_0)
+    Initial(PP3(b=None), PP3_0)
 
     
 def mapk_events():
@@ -227,22 +227,42 @@ def mapk_events():
          SOS(bgrb=ANY, bras=None) + RAS(bsos=None, braf=None, st='GTPU'),
          Parameter("RasGDP_GTPf",KF), Parameter("RasGDP_GTPr",KR))
 
-    # Activation of RAF -> RAF* by RAS-GTP -- CHECK WITH CARLOS
+    # Activation of RAF -> RAF:P by RAS-GTP -- CHECK WITH CARLOS
     catalyze(RAS(bsos=None, st='GTPU'), 'braf', RAF(st='U'), 'b', RAF(st='P'),
+             (KF,KR,KC))
+
+    # Deactivation of RAF:P -> RAF by PP1
+    catalyze(PP1(), 'b', RAF(st='P'), 'b', RAF(st='U'),
              (KF,KR,KC))
 
     # Activation of MEK -> MEK:P by activated RAF
     catalyze(RAF(st='P'), 'b', MEK(st='U'), 'b', MEK(st='P'),
+             (KF,KR,KC))
+
+    # Deactivation of MEK:P -> MEK by PP2
+    catalyze(PP2(), 'b', MEK(st='P'), 'b', MEK(st='U'),
              (KF,KR,KC))
     
     # Activation of MEK:P -> MEK:P:P by activated RAF
     catalyze(RAF(st='P'), 'b', MEK(st='P'), 'b', MEK(st='PP'),
              (KF,KR,KC))
 
+    # Deactivation of MEK:P:P -> MEK:P by PP2
+    catalyze(PP2(), 'b', MEK(st='PP'), 'b', MEK(st='P'),
+             (KF,KR,KC))
+    
     # Activation of ERK -> ERK:P by activated MEK:P:P
     catalyze(MEK(st='PP'), 'b', ERK(st='U'), 'b', ERK(st='P'),
              (KF,KR,KC))
 
+    # Deactivation of ERK:P -> ERK by PP3
+    catalyze(PP3(), 'b', ERK(st='P'), 'b', ERK(st='U'),
+             (KF,KR,KC))
+
     # Activation of ERK:P -> ERK:P:P by activated MEK:P:P
     catalyze(MEK(st='PP'), 'b', ERK(st='P'), 'b', ERK(st='PP'),
+             (KF,KR,KC))
+
+    # Deactivation of ERK:P:P -> ERK:P by PP3
+    catalyze(PP3(), 'b', ERK(st='PP'), 'b', ERK(st='P'),
              (KF,KR,KC))
