@@ -8,6 +8,9 @@ from pysb import *
 from egfr import chen_modules
 
 Model()
+from pysb import *
+from pysb.integrate import odesolve
+from pylab import linspace, plot, xlabel, ylabel, show
 
 # Declare monomers
 chen_modules.rec_monomers()
@@ -21,6 +24,16 @@ chen_modules.mapk_events()
 chen_modules.rec_initial()
 chen_modules.mapk_initial()
 
+
 # Declare observables
-#shared.observables()
+Observable('ERKPP', ERK(b=None, st='PP'))
+
+time = linspace(0,2400,100)
+print "Simulating..."
+x = odesolve(model, time)
+# Plot the trajectory of ERKPP
+plot(time, x['ERKPP'])
+xlabel('Time (seconds)')
+ylabel('Amount of ERKPP')
+show()
 
