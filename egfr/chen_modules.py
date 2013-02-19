@@ -48,17 +48,16 @@ def rec_monomers():
     Monomer('ADP')
 
 def rec_initial():
-    """
-    STATE WHERE PARAMS CAME FROM
-    """
-    Parameter('EGF_0',   5e-9)
-    Parameter('HRG_0',   5e-9)
-    Parameter('erbb1_0', 5e4)
-    Parameter('erbb2_0', 5e4)
-    Parameter('erbb3_0', 5e4)
-    Parameter('erbb4_0', 5e4)
-    Parameter('DEP_0',   1e7)
-    Parameter('ATP_0',   1.2e9)
+    # Initial concentrations of ligands, receptor monomers, and ATP taken from Chen et al. 
+    Parameter('EGF_0',      5e-9)
+    Parameter('HRG_0',         0)
+    Parameter('erbb1_0',  1.08e6)
+    Parameter('erbb2_0',  4.62e5)
+    Parameter('erbb3_0',  6.23e3)
+    Parameter('erbb4_0',  7.94e2)
+    Parameter('ATP_0',     1.2e9)
+    Parameter('DEP_0',       7e4)
+    
 
     alias_model_components()
 
@@ -68,8 +67,9 @@ def rec_initial():
     Initial(erbb(bl=None, bd=None, b=None, ty='2', st='U', loc='C'), erbb2_0)
     Initial(erbb(bl=None, bd=None, b=None, ty='3', st='U', loc='C'), erbb3_0)
     Initial(erbb(bl=None, bd=None, b=None, ty='4', st='U', loc='C'), erbb4_0)
-    Initial(DEP(b=None), DEP_0)
     Initial(ATP(b=None), ATP_0)
+    Initial(DEP(b=None), DEP_0)
+
             
 def rec_events():
     """ Describe receptor-level events here. 
@@ -81,25 +81,25 @@ def rec_events():
     alias_model_components()
     
     # EGF / HRG binding to receptors
-    # EGF / HRG receptor binding rates obtained from Chen et al Table 1 pg. 5
-    bind_table([[                                                   EGF,             HRG],
-                [erbb(ty='1', b=None, st='U', loc='C'),   (1e7, 3e-2),            None],
+    # EGF / HRG receptor binding rates obtained from Chen et al (Supplementary)
+    bind_table([[                                                 EGF,             HRG],
+                [erbb(ty='1', b=None, st='U', loc='C'),   (1e7, 3.3e-2),            None],
                 [erbb(ty='3', b=None, st='U', loc='C'),            None,  (1e7, 7e-2)],
                 [erbb(ty='4', b=None, st='U', loc='C'),            None,  (1e7, 7e-2)]],
                 'bl', 'b')
     
     # ErbB dimerization
-    # Dimerization rates obtained from Chen et al Table 1 pg. 5
+    # Dimerization rates obtained from Chen et al (Supplementary)
     bind_table([[                       erbb(ty='1', b=None, st='U', loc='C'), erbb(ty='2', b=None, st='U', loc='C'), erbb(ty='3', b=None, st='U', loc='C'), erbb(ty='4', b=None, st='U', loc='C')],
-                [erbb(ty='1', b=None, st='U', loc='C'),        (KDIMF, KDIMR),                          None,                 None,                  None],
-                [erbb(ty='2', b=None, st='U', loc='C'),        (KDIMF, KDIMR),                (KDIMF, KDIMR),                 None,                  None],
-                [erbb(ty='3', b=None, st='U', loc='C'),        (KDIMF, KDIMR),                (KDIMF, KDIMR),                 None,                  None],
-                [erbb(ty='4', b=None, st='U', loc='C'),        (KDIMF, KDIMR),                (KDIMF, KDIMR),                 None,                  None]],
+                [erbb(ty='1', b=None, st='U', loc='C'),        (7.45e-6, 1.6e-1),                              None,                 None,                  None],
+                [erbb(ty='2', b=None, st='U', loc='C'),        (3.74e-8, 1.6e-2),                (1.67e-10, 1.6e-2),                 None,                  None],
+                [erbb(ty='3', b=None, st='U', loc='C'),        (3.74e-8, 1.6e-2),                (1.67e-10, 1.6e-2),                 None,                  None],
+                [erbb(ty='4', b=None, st='U', loc='C'),        (3.74e-8, 1.6e-2),                (1.67e-10, 1.6e-2),                 None,                  None]],
         'bd', 'bd')
 
     # ATP binding: ATP only binds to dimers
-    # ATP binding rates obtained from Chen et al (k122, k_122)
-    bind_table([[                                            ATP],
+    # ATP binding rates obtained from Chen et al (Supplementary)
+    bind_table([[                                                ATP],
                 [erbb(ty='1', bd=ANY, st='U', loc='C'), (1.87e-8, 1)],
                 [erbb(ty='2', bd=ANY, st='U', loc='C'), (1.87e-8, 1)],
                 [erbb(ty='4', bd=ANY, st='U', loc='C'), (1.87e-8, 1)]],
@@ -107,13 +107,14 @@ def rec_events():
 
     # This works b/c only erbb1, 2, and 4 have ATP, and they can cross-phosphorylate any other receptor
     # erbb2:erbb2 pairs only happen by dissociation of phosphorylated monomers
-    # 
+    # kcat phosphorylation obtained from Chen et al Table I pg. 5
+    
     for i in ['1','2','4']:
         for j in ['1','2','3','4']:
             Rule("cross_phospho_"+i+"_"+j,
                  ATP(b=1) % erbb(ty=i, b=1,    bd=2) % erbb(ty=j, bd=2, st='U') >>
                  ADP()    + erbb(ty=i, b=None, bd=2) % erbb(ty=j, bd=2, st='P'),
-                 Parameter("kcp"+i+j, KCP))
+                 Parameter("kcp"+i+j, 1e-1))
 
     
     # Receptor Dephosphorylation
@@ -123,19 +124,22 @@ def rec_events():
     #  Bursett, TA, Hoier, EF, Hajnal, A: Genes Dev. 19:1328-1340 (2005)
     #  Haj, FG, Verver, PJ, Squire, A, Neel, BG, Bastiaens, PI: Science 295:1708-1711 (2002)
     #  FIXME: REPLACE W A NEW CATALYSIS TABLE????
+    #  KF, KR, KC taken from Chen et al (Supplementary)
     for i in ['1','2','3','4']:
         catalyze(DEP(), 'b', erbb(st='P', ty=i), 'b', erbb(st='U', ty=i),
-                 (KF,KR,KCD))
+                 (5e-5,1e-2,1e-2))
         
     # Receptor internalization
-    # This internalizes all receptor combos 
+    # This internalizes all receptor combos
+    # Internalization rates taken from Chen et al Table I pg. 5
     Rule("rec_intern",
          erbb(bd=1, loc='C') % erbb(bd=1, loc='C') <> erbb(bd=1, loc='E') % erbb(bd=1, loc='E'),
-         Parameter("kintf", KINTF), Parameter("kintr", KINTR))
+         Parameter("kintf", 1.3e-3), Parameter("kintr", 5e-5))
 
     # Receptor degradation
     # This degrades all receptor combos within an endosome
-    degrade(erbb(bd=1, loc='E') % erbb(bd=1, loc='E'), Parameter("kdeg", KDEG))
+    # Should this have a forward and reverse rate - k62b
+    degrade(erbb(bd=1, loc='E') % erbb(bd=1, loc='E'), Parameter("kdeg", 4.16e-4))
 
     # FIXME:need negative feedback from ERK and AKT. include that in the other modules?
 
@@ -163,11 +167,11 @@ def mapk_initial():
     Parameter('SOS_0', 6.63e4)
     Parameter('RAS_0', 1.14e7)
     Parameter('RAF_0', 4e4)
+    Parameter('MEK_0', 2.2e7)
+    Parameter('ERK_0', 2.1e7)
     Parameter('PP1_0', 4e4)
     Parameter('PP2_0', 4e4)
     Parameter('PP3_0', 1e7)
-    Parameter('MEK_0', 2.2e7)
-    Parameter('ERK_0', 2.1e7)
 
     alias_model_components()
 
