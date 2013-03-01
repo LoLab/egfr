@@ -36,6 +36,7 @@ KDEG = .1
 # ====================
 
 def rec_monomers():
+
     """ Declares the ErbB receptor interactions.
     'bf' is the default site to be used for all binding/catalysis reactions.
     """
@@ -82,30 +83,36 @@ def rec_events():
     
     # EGF / HRG binding to receptors
     # EGF / HRG receptor binding rates obtained from Chen et al (Supplementary)
-    bind_table([[                                                 EGF,             HRG],
-                [erbb(ty='1', b=None, st='U', loc='C'),   (1e7, 3.3e-2),            None],
-                [erbb(ty='3', b=None, st='U', loc='C'),            None,  (1e7, 7e-2)],
-                [erbb(ty='4', b=None, st='U', loc='C'),            None,  (1e7, 7e-2)]],
+    bind_table([[                                                          EGF,             HRG],
+                [erbb(ty='1', bd=None, b=None, st='U', loc='C'),   (1e7, 3.3e-2),          None],
+                [erbb(ty='3', bd=None, b=None, st='U', loc='C'),            None,   (1e7, 7e-2)],
+                [erbb(ty='4', bd=None, b=None, st='U', loc='C'),            None,   (1e7, 7e-2)]],
                 'bl', 'b')
     
     # ErbB dimerization
     # Dimerization rates obtained from Chen et al (Supplementary)
-    bind_table([[                       erbb(ty='1', b=None, st='U', loc='C'), erbb(ty='2', b=None, st='U', loc='C'), erbb(ty='3', b=None, st='U', loc='C'), erbb(ty='4', b=None, st='U', loc='C')],
-                [erbb(ty='1', b=None, st='U', loc='C'),        (7.45e-6, 1.6e-1),                              None,                 None,                  None],
-                [erbb(ty='2', b=None, st='U', loc='C'),        (3.74e-8, 1.6e-2),                (1.67e-10, 1.6e-2),                 None,                  None],
-                [erbb(ty='3', b=None, st='U', loc='C'),        (3.74e-8, 1.6e-2),                (1.67e-10, 1.6e-2),                 None,                  None],
-                [erbb(ty='4', b=None, st='U', loc='C'),        (3.74e-8, 1.6e-2),                (1.67e-10, 1.6e-2),                 None,                  None]],
+    # erbb's is required to containe a ligand (except for erbb2 which cannot bind a ligand)
+    erbb1Lig = erbb(ty='1', bl=ANY, b=None, st='U', loc='C')
+    erbb2Lig = erbb(ty='2', bl=None, b=None, st='U', loc='C')
+    erbb3Lig = erbb(ty='3',bl=ANY, b=None, st='U', loc='C')
+    erbb4Lig = erbb(ty='4',bl=ANY, b=None, st='U', loc='C')
+    bind_table([[                          erbb1Lig,            erbb2Lig, erbb3Lig, erbb4Lig],
+                [erbb1Lig,        (7.45e-6, 1.6e-1),                None,     None,     None],
+                [erbb2Lig,        (3.74e-8, 1.6e-2),  (1.67e-10, 1.6e-2),     None,     None],
+                [erbb3Lig,        (3.74e-8, 1.6e-2),  (1.67e-10, 1.6e-2),     None,     None],
+                [erbb4Lig,        (3.74e-8, 1.6e-2),  (1.67e-10, 1.6e-2),     None,     None]],
         'bd', 'bd')
 
     # ATP binding: ATP only binds to dimers
     # ATP binding rates obtained from Chen et al (Supplementary)
+    # FIXME: should this be reversible?
     bind_table([[                                                ATP],
                 [erbb(ty='1', bd=ANY, st='U', loc='C'), (1.87e-8, 1)],
                 [erbb(ty='2', bd=ANY, st='U', loc='C'), (1.87e-8, 1)],
                 [erbb(ty='4', bd=ANY, st='U', loc='C'), (1.87e-8, 1)]],
         'b', 'b')
 
-    # This works b/c only erbb1, 2, and 4 have ATP, and they can cross-phosphorylate any other receptor
+    # Cross phosphorylation: only erbb1, 2, and 4 have ATP, and they can cross-phosphorylate any other receptor
     # erbb2:erbb2 pairs only happen by dissociation of phosphorylated monomers
     # kcat phosphorylation obtained from Chen et al Table I pg. 5
     
@@ -131,6 +138,7 @@ def rec_events():
         
     # Receptor internalization
     # This internalizes all receptor combos
+    # FIXME: this should just be a state transformation (i.e. the rule looks noisy)
     # Internalization rates taken from Chen et al Table I pg. 5
     Rule("rec_intern",
          erbb(bd=1, loc='C') % erbb(bd=1, loc='C') <> erbb(bd=1, loc='E') % erbb(bd=1, loc='E'),
@@ -141,7 +149,7 @@ def rec_events():
     # Should this have a forward and reverse rate - k62b
     degrade(erbb(bd=1, loc='E') % erbb(bd=1, loc='E'), Parameter("kdeg", 4.16e-4))
 
-    # FIXME:need negative feedback from ERK and AKT. include that in the other modules?
+    # FIXME: need negative feedback from ERK and AKT. include that in the other modules?
 
 def mapk_monomers():
     Monomer('GAP', ['bd', 'b'])
