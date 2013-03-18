@@ -105,37 +105,36 @@ def rec_events():
 
     # ATP binding: ATP only binds to dimers
     # ATP binding rates obtained from Chen et al (Supplementary)
-    # FIXME: should this be reversible?
-    bind_table([[                                                ATP],
-                [erbb(ty='1', bd=ANY, st='U', loc='C'), (1.87e-8, 1)],
-                [erbb(ty='2', bd=ANY, st='U', loc='C'), (1.87e-8, 1)],
-                [erbb(ty='4', bd=ANY, st='U', loc='C'), (1.87e-8, 1)]],
+    # include DEP binding here since they both bind to the same site
+    bind_table([[                                                ATP,  DEP],
+                [erbb(ty='1', bd=ANY, st='U', loc='C'), (1.87e-8, 1), (5e-5, 1e-2)],
+                [erbb(ty='2', bd=ANY, st='U', loc='C'), (1.87e-8, 1), (5e-5, 1e-2)],
+                [erbb(ty='4', bd=ANY, st='U', loc='C'), (1.87e-8, 1), (5e-5, 1e-2)]],
         'b', 'b')
 
     # Cross phosphorylation: only erbb1, 2, and 4 have ATP, and they can cross-phosphorylate any other receptor
     # erbb2:erbb2 pairs only happen by dissociation of phosphorylated monomers
     # kcat phosphorylation obtained from Chen et al Table I pg. 5
-    
-    for i in ['1','2','4']:
-        for j in ['1','2','3','4']:
-            Rule("cross_phospho_"+i+"_"+j,
-                 ATP(b=1) % erbb(ty=i, b=1,    bd=2) % erbb(ty=j, bd=2, st='U') >>
-                 ADP()    + erbb(ty=i, b=None, bd=2) % erbb(ty=j, bd=2, st='P'),
-                 Parameter("kcp"+i+j, 1e-1))
 
-    
+    # Both dimers become phosphorylated/dephosphorylated to agree better w Chen/Schoeberl model
     # Receptor Dephosphorylation
     # DEPHOSPHORYLATION: 
     #  * Density enhanced phosphatase1 (DEP1) dephosphorylates ERB1 (at the cell-membrane)
     #  * Protein Tyrosine Phosphatase1b (PTP1b) dephosphorylates all RTKs (at the endo-membrane)
     #  Bursett, TA, Hoier, EF, Hajnal, A: Genes Dev. 19:1328-1340 (2005)
     #  Haj, FG, Verver, PJ, Squire, A, Neel, BG, Bastiaens, PI: Science 295:1708-1711 (2002)
-    #  FIXME: REPLACE W A NEW CATALYSIS TABLE????
-    #  KF, KR, KC taken from Chen et al (Supplementary)
-    for i in ['1','2','3','4']:
-        catalyze(DEP(), 'b', erbb(st='P', ty=i), 'b', erbb(st='U', ty=i),
-                 (5e-5,1e-2,1e-2))
-        
+
+    for i in ['1','2','4']:
+        for j in ['1','2','3','4']:
+            Rule("cross_phospho_"+i+"_"+j,
+                 ATP(b=1) % erbb(ty=i, b=1,    bd=2, st='U') % erbb(ty=j, bd=2, st='U') >>
+                 ADP()    + erbb(ty=i, b=None, bd=2, st='P') % erbb(ty=j, bd=2, st='P'),
+                 Parameter("kcp"+i+j, 1e-1))
+            Rule("cross_DEphospho_"+i+"_"+j,
+                 DEP(b=1)   %  erbb(ty=i, b=1,    bd=2, st='P') % erbb(ty=j, bd=2, st='P') >>
+                 DEP(b=None) + erbb(ty=i, b=None, bd=2, st='U') % erbb(ty=j, bd=2, st='U'),
+                 Parameter("kcd"+i+j, 1e-1))
+
     # Receptor internalization
     # This internalizes all receptor combos
     # FIXME: this should just be a state transformation (i.e. the rule looks noisy)
@@ -283,3 +282,13 @@ def mapk_events():
     # Deactivation of ERK:P:P -> ERK:P by PP3
     catalyze(PP3(), 'b', ERK(st='PP'), 'b', ERK(st='P'),
              (KF,KR,KCD))
+
+
+def akt_monomers():
+    pass
+
+def akt_initial():
+    pass
+
+def akt_events():
+    pass
