@@ -151,13 +151,13 @@ def rec_events():
     # FIXME: need negative feedback from ERK and AKT. include that in the other modules?
 
 def mapk_monomers():
-    Monomer('GAP', ['bd', 'b'])
+    Monomer('GAP', ['bd', 'b', 'bgrb2'])
     Monomer('SHC', ['bgap', 'bgrb', 'batp', 'st'], {'st':['U','P']})
     # Monomer('SHCPase', ['b'])
-    Monomer('GRB2', ['b', 'bsos'])
-    Monomer('SOS', ['bgrb', 'bras'])
-    Monomer('RAS', ['bsos', 'braf', 'st'], {'st':['GDP', 'GTP']})
-    Monomer('RAF', ['b', 'st'], {'st':['U', 'P']})
+    Monomer('GRB2', ['b', 'bsos', 'bgap', 'bgab1'])
+    Monomer('SOS', ['bgrb', 'bras', 'bERKPP', 'st'], {'st':['U', 'P']})
+    Monomer('RAS', ['bsos', 'braf', 'bpi3k', 'st'], {'st':['GDP', 'GTP']})
+    Monomer('RAF', ['b', 'st', 'ser295'], {'st':['U', 'P'], 'ser295':['U', 'P']})
     Monomer('PP1', ['b'])
     Monomer('PP2', ['b'])
     Monomer('PP3', ['b'])
@@ -182,12 +182,12 @@ def mapk_initial():
 
     alias_model_components()
 
-    Initial(GAP(bd=None, b=None), GAP_0)
+    Initial(GAP(bd=None, b=None, bgrb2=None), GAP_0)
     Initial(SHC(bgap=None, bgrb=None, batp=None, st='U'), SHC_0)
-    Initial(GRB2(b=None, bsos=None), GRB2_0)
-    Initial(SOS(bgrb=None, bras=None), SOS_0)
-    Initial(RAS(bsos=None, braf=None, st='GDP'), RAS_0)
-    Initial(RAF(b=None, st='U'), RAF_0)
+    Initial(GRB2(b=None, bsos=None, bgap=None, bgab1=None), GRB2_0)
+    Initial(SOS(bgrb=None, bras=None, bERKPP=None, st='U'), SOS_0)
+    Initial(RAS(bsos=None, braf=None, bpi3k=None, st='GDP'), RAS_0)
+    Initial(RAF(b=None, st='U', ser295='U'), RAF_0)
     Initial(MEK(b=None, st='U'), MEK_0)
     Initial(ERK(b=None, st='U'), ERK_0)
     Initial(PP1(b=None), PP1_0)
@@ -210,7 +210,7 @@ def mapk_events():
          Parameter("kerbb_dim_GAPf", KF), Parameter("kerbb_dim_GAPr", KR))
     
     # SHC binds to GAP-complex
-    bind(GAP(bd=ANY), 'b', SHC(batp=None, st='U'), 'bgap', [KF, KR])
+    bind(GAP(bd=ANY, bgrb2=None), 'b', SHC(batp=None, st='U'), 'bgap', [KF, KR])
 
     # SHC phosphorylation
     Rule("Shc_bind_ATP",
@@ -224,35 +224,44 @@ def mapk_events():
          Parameter("ShcPhosc", KCP))
 
     # GRB2 binds to GAP-SHC:P
-    bind(SHC(batp=None, st='P'), 'bgrb', GRB2(), 'b', [KF, KR])
+    bind(SHC(batp=None, st='P'), 'bgrb', GRB2(bgap=None, bgab1=None), 'b', [KF, KR])
 
     # SOS binds to GAP-SHC:P-GRB2 - rate obtained from Chen et al. pg 5. 
-    bind(GRB2(b=ANY), 'bsos', SOS(bras=None), 'bgrb', [7.5e-6, 1.5])
+    bind(GRB2(b=ANY, bgap=None, bgab1=None), 'bsos', SOS(bras=None, st='U'), 'bgrb', [7.5e-6, 1.5])
+
+    # SOS also binds GAP-GRB2
+    Rule("GAP_GRB2_bind_SOS",
+         GRB2(bgap=ANY, bgab1=None, b=None, bsos=None) + SOS(bras=None, bgrb=None, st='U') <>
+         GRB2(bgap=ANY, bgab1=None, b=None, bsos=1) % SOS(bras=None, bgrb=1, st='U'),
+         Parameter("GAP_GRB2_bind_SOSf", 7.5e-6),
+         Parameter("GAP_GRB2_bind_SOSr", 1.5))
+
+    # GAP-GRB2-SOS and GAP-SHC:P-GRB2-SOS catalyze RAS-GDP->RAS-GTP:
+    catalyze_state(SOS(bgrb=ANY), 'bras', RAS(braf=None), 'bsos', 'st', 'GDP', 'GTP', (KF, KR, KCD))
 
     # RAS-GDP binds to GAP-SHC:P-GRB2-SOS
-    bind(SOS(bgrb=ANY), 'bras', RAS(braf=None, st='GDP'), 'bsos',  [KF, KR])
+    #bind(SOS(bgrb=ANY), 'bras', RAS(braf=None, st='GDP'), 'bsos',  [KF, KR])
 
     # RAS-GTP binds to GAP-SHC:P-GRB2-SOS
-    catalyze(SOS(bgrb=ANY), 'bras', RAS(braf=None, st='GTP'), 'bsos', RAS(bsos=None, braf=None, st='GDP'),
-             (KF,KR,KCD))
+    #catalyze(SOS(bgrb=ANY), 'bras', RAS(braf=None, st='GTP'), 'bsos', RAS(bsos=None, braf=None, st='GDP'),
+    #        (KF,KR,KCD))
 
     # RAS-GDP dissociates from GAP complex to form RAS-GTPU
-    Rule("RAS_GDP_to_RAS_GTP",
-         SOS(bgrb=ANY, bras=4) % RAS(bsos=4, braf=None, st='GDP') <>
-         SOS(bgrb=ANY, bras=None) + RAS(bsos=None, braf=None, st='GTP'),
-         Parameter("RasGDP_GTPf",KF), Parameter("RasGDP_GTPr",KR))
+    #Rule("RAS_GDP_to_RAS_GTP",
+    #    SOS(bgrb=ANY, bras=4) % RAS(bsos=4, braf=None, st='GDP') <>
+    #   SOS(bgrb=ANY, bras=None) + RAS(bsos=None, braf=None, st='GTP'),
+    #   Parameter("RasGDP_GTPf",KF), Parameter("RasGDP_GTPr",KR))
 
     # Activation of RAF -> RAF:P by RAS-GTP 
     catalyze(RAS(bsos=None, st='GTP'), 'braf', RAF(st='U'), 'b', RAF(st='P'),
              (KF,KR,KCP))
 
-    
     # Deactivation of RAF:P -> RAF by PP1
     catalyze(PP1(), 'b', RAF(st='P'), 'b', RAF(st='U'),
              (KF,KR,KCD))
 
     # Activation of MEK -> MEK:P by activated RAF
-    catalyze(RAF(st='P'), 'b', MEK(st='U'), 'b', MEK(st='P'),
+    catalyze(RAF(st='P', ser295='U'), 'b', MEK(st='U'), 'b', MEK(st='P'),
              (KF,KR,KCP))
 
     # Deactivation of MEK:P -> MEK by PP2
@@ -283,12 +292,167 @@ def mapk_events():
     catalyze(PP3(), 'b', ERK(st='PP'), 'b', ERK(st='P'),
              (KF,KR,KCD))
 
-
 def akt_monomers():
-    pass
+    """ This is the akt part of the pathway from the Chen et al. 2009 paper.  Initial rules for all binding reactions were generated and then coded again using macros and higher order macros.  Initial parameters and conditions were taken from Chen et al. 2009 paper and supplementary, but were later modified in order to get the model working correctly.  This pathway follows AKT from its initial state to a phosphorylated and then double phosphorylated state before returning to unphosphorylated AKT.  The model works correctly, but parameters and rates may need to be modified in order to get best fit.  Parameters and rates included are from trial and error of what best fit the model.  The last unbinding reactions may not be needed because of the catalyze_state macros, but were left in just in case these are needed later.  
+"""
+    #This pathway coded by Tim O'Brien.
+    Monomer('GAB1', ['bgrb2', 'bshp2', 'bpi3k', 'bpi3k2', 'bpi3k3', 'bpi3k4', 'bpi3k5', 'bpi3k6','batp','bERKPP','bPase9t','S'],{'S':['U','P','PP']})
+    Monomer('PI3K',['bgab1','bpip', 'bras'])
+    Monomer('SHP2',['bgab1'])
+    Monomer('PIP', ['bakt', 'both', 'S', 'bpi3k'], {'S':['PIP2', 'PIP3']})
+    Monomer('PTEN', ['bpip3', 'both'])
+    Monomer('SHP', ['bpip3', 'both'])
+    Monomer('AKT', ['bpip3', 'both', 'S'], {'S':['U', 'P', 'PP']})
+    Monomer('PDK1', ['bakt', 'both'])
+    Monomer('PP2A_III', ['bakt', 'both'])
 
 def akt_initial():
-    pass
-
+    # Initial concentrations modified from Chen et al. 2009 Supplementary text values
+    # Initial PIP_0 not from Chen et al.
+    Parameter('GAB1_0', 94868.3)
+    Parameter('PI3K_0', 3.55656e7)
+    Parameter('SHP2_0', 1e6)
+    Parameter('PIP_0',     9.00e3)
+    Parameter('PTEN_0',    5.00e4)
+    Parameter('SHP_0',     7.00e4)
+    Parameter('AKT_0',     9.05e6)
+    Parameter('PDK1_0',     9.5e6)
+    Parameter('PP2A_III_0', 4.5e5)
+    alias_model_components()
+    
+    # Initial conditions 
+    Initial(GAB1(bgrb2=None, bshp2=None, bpi3k=None, bpi3k2=None, bpi3k3=None, bpi3k4=None, bpi3k5=None, bpi3k6=None, batp=None, bERKPP=None, bPase9t=None, S='U'), GAB1_0)
+    Initial(PI3K(bgab1=None, bpip=None, bras=None), PI3K_0)
+    Initial(SHP2(bgab1=None), SHP2_0)
+    Initial(PIP(bakt=None, both=None, S='PIP2', bpi3k=None), PIP_0)
+    Initial(PTEN(bpip3=None, both=None), PTEN_0)
+    Initial(SHP(bpip3=None, both=None), SHP_0)
+    Initial(AKT(bpip3=None, both=None, S='U'), AKT_0)
+    Initial(PDK1(bakt=None, both=None), PDK1_0)
+    Initial(PP2A_III(bakt=None, both=None), PP2A_III_0)
 def akt_events():
-    pass
+    # parameter values taken from Chen et al. 2009
+    Parameter('kf',  1e-5)
+    Parameter('kr',  1e-3)
+    Parameter('kcd', 1e-1)
+    alias_model_components()
+    #GRB2 binds GAP-complex (without requiring SHC bound to complex) k16, kd24
+    bind(GRB2(b=None, bsos=None), 'bgap', GAP(bd=ANY, b=None), 'bgrb2', [1.67e-05, 5.5e-01])
+    #GAB1 binds GAP-GRB2 k105, kd105
+    bind(GRB2(b=None, bsos=None, bgap=ANY), 'bgab1', GAB1(bshp2=None, bpi3k=None, batp=None, bERKPP=None, bPase9t=None), 'bgrb2', [6.67e-05, 1e-01])
+    #GAP-GRB2-GAB1 phosphorylation - Rates from Table p. 5 Chen et al 2009
+    Rule('GAB1_bind_ATP',
+         GAP(bd=ANY, b=None, bgrb2=ANY) % GRB2(b=None, bsos=None, bgap=ANY, bgab1=ANY) % GAB1(bshp2=None, bpi3k=None, batp=None, bERKPP=None, bPase9t=None, bgrb2=ANY, S='U') + ATP(b=None) <>
+         GAP(bd=ANY, b=None, bgrb2=ANY) % GRB2(b=None, bsos=None, bgap=ANY, bgab1=ANY) % GAB1(bshp2=None, bpi3k=None, batp=1, bERKPP=None, bPase9t=None, bgrb2=ANY, S='U') % ATP(b=1),
+         Parameter('GAB1ATPf', 1e-5),
+         Parameter('GAB1ATPr', 1e-1))
+
+    Rule('GAB1_phos',
+         GAP(bd=ANY, b=None, bgrb2=ANY) % GRB2(b=None, bsos=None, bgap=ANY, bgab1=ANY) % GAB1(bshp2=None, bpi3k=None, batp=1, bERKPP=None, bPase9t=None, bgrb2=ANY, S='U') % ATP(b=1) >>
+         GAP(bd=ANY, b=None, bgrb2=ANY) % GRB2(b=None, bsos=None, bgap=ANY, bgab1=ANY) % GAB1(bshp2=None, bpi3k=None, batp=None, bERKPP=None, bPase9t=None, bgrb2=ANY, S='P') + ADP(),
+         Parameter('GAB1Phosc', 1e-1))
+
+    #SHP2 can desphosphorylate GAB1-P
+    catalyze_state(SHP2(), 'bgab1', GAB1(bgrb2=ANY, bpi3k=None, batp=None, bERKPP=None, bPase9t=None), 'bshp2', 'S', 'P', 'U', (1e-5, 1e-1, 1e-2))
+   
+    #After GAB1 phosphorylation, all receptor dimer combinations can bind a single PI3K
+    Rule('GAB1_bind_PI3K_1',
+         GAB1(bshp2=None, bpi3k=None, batp=None, bERKPP=None, bPase9t=None, bgrb2=ANY, S='P') + PI3K(bpip=None, bgab1=None, bras=None) <>
+         GAB1(bshp2=None, bpi3k=1, batp=None, bERKPP=None, bPase9t=None, bgrb2=ANY, S='P') % PI3K(bpip=None, bgab1=1, bras=None),
+         Parameter('GAB1PI3Kf', 1e-5),
+         Parameter('GAB1PI3Kr', 1e-1))
+
+    #ErbB2-ErbB3 dimers bound to GAB1 contain 6 binding domains for PI3K.
+    for i in range(1,6):
+         pi3k_string_beg = '+ PI3K(bpip=None) + PIP(S="PIP2")'
+         pi3k_string_end = '+ PI3K(bpip=None) + PIP(S="PIP3")'
+         Rule('ErbB2_3bindPI3K'+str(i),
+              erbb(bd=1, ty='2') % erbb(bd=1, ty='3') % GAP(bd=ANY, b=None, bgrb2=ANY) % GRB2(b=None, bsos=None, bgap=ANY, bgab1=ANY) % GAB1(bshp2=None, batp=None, bERKPP=None, bPase9t=None, bgrb2=ANY, S='P') i*pi3k_string_beg<>
+              erbb(bd=1, ty='2') % erbb(bd=1, ty='3') % GAP(bd=ANY, b=None, bgrb2=ANY) % GRB2(b=None, bsos=None, bgap=ANY, bgab1=ANY) % GAB1(bshp2=None, batp=None, bERKPP=None, bPase9t=None, bgrb2=ANY, S='P') i*pi3k_string_end,
+              Parameter('GAB1PI3Kf'+str(i), 1e-5),
+              Parameter('GAB1PI3Kr'+str(i), 1e-1))
+             
+    #gsites= ['bpi3k2'] #, 'bpi3k3', 'bpi3k4', 'bpi3k5', 'bpi3k6']
+                       #GAB1specs_none=[GAB1(bpi3k2=None, bshp2=None, batp=None, bERKPP=None, bPase9t=None, bgrb2=ANY, S='P')]
+    #GAB1specs_b=[GAB1(bpi3k2=1, bshp2=None, batp=None, bERKPP=None, bPase9t=None, bgrb2=ANY, S='P')]
+    
+    #for gspec in gsites:
+    # Rule('GAB1_bind_'+gspec,
+    #erbb(bd=1, ty='2') % erbb(bd=1, ty='3') % GAP(bd=ANY, b=None, bgrb2=ANY) % GRB2(b=None, bsos=None, bgap=ANY, bgab1=ANY) %  + PI3K(bgab1=None, bpip=None) <>
+    #erbb(bd=1, ty='2') % erbb(bd=1, ty='3') % GAP(bd=ANY, b=None, bgrb2=ANY) % GRB2(b=None, bsos=None, bgap=ANY, bgab1=ANY) % gspec % PI3K(bgab1=1, bpip=None),
+    #  Parameter('GAB1'+gspec+'f', 1e-5),
+    #  Parameter('GAB1'+gspec+'r', 1e-1))
+
+    #PI3K bound to complex catalyzes PIP2 -> PIP3
+    catalyze_state(PI3K(bgab1=ANY), 'bpip', PIP(bakt=None, both=None), 'bpi3k', 'S', 'PIP2', 'PIP3', (1e-5, 1e-1, 1e-1))
+             
+     # Setting up the binding reactions necessary for AKT to be phosphorylated and move through the pathway
+    bind_table([[                       AKT(S='U', both=None),       AKT(S='P', both=None),      AKT(S='PP', both=None)],
+                [PIP(S='PIP3', both=None, bpi3k=None),       (1e-5, 1e-3),     (1e-5, 1e-3),    (1e-5, 1e-3)]],
+                'bakt', 'bpip3')
+
+    # AKT-PIP3 is phosphorylated by PDK1 to AKTP
+    catalyze(PDK1, 'bakt', AKT(bpip3=ANY, S='U'), 'both', AKT(bpip3=ANY, S='P'), (kf, kr, kcd))
+
+    # AKTP-PIP3 is phosphorylated by PDK1 to AKTPP
+    catalyze(PDK1, 'bakt', AKT(bpip3=ANY, S='P'), 'both', AKT(bpip3=ANY, S='PP'), (kf, kr, kcd))
+
+    # AKTP is dephosphorylated by PP2A-III back to AKT
+    catalyze_state(PP2A_III, 'bakt', AKT(bpip3=None), 'both', 'S', 'P', 'U',(1e-5, 1e-3, 1e-3))
+   
+    # AKTPP is dephosphorylated by PP2A-III back to AKTP
+    catalyze_state(PP2A_III, 'bakt', AKT(bpip3=None), 'both', 'S', 'PP', 'P',(1e-5, 1e-3, 1e-3))
+
+    # PIP3 is dephosphorylated by PTEN to PIP2
+    catalyze_state(PTEN, 'bpip3', PIP(bakt=None), 'both', 'S', 'PIP3', 'PIP2', (1e-5, 1e-3, 1e-3))
+
+    # PIP3 is dephosphorylated by SHP to PIP2
+    catalyze_state(SHP, 'bpip3', PIP(bakt=None), 'both', 'S', 'PIP3', 'PIP2', (1e-5, 1e-3, 1e-3))
+
+    # Release of AKTP from PIP3 (this may not be needed because of binding table above)
+    Rule('AKT_PDK1_undbind', AKT(bpip3=ANY, both=None, S='U') % PIP(bakt=1, both=2, S='PIP3') % PDK1(bakt=None, both=2) >> AKT(bpip3=None, both=None, S='P') + PDK1(bakt=None, both=1) % PIP(bakt=None, both=1, S='PIP3'), kf)
+
+# PDK1-PIP3 dissociate after phosphorylation of AKT
+    Rule('PDK1_PIP3_unbind', PDK1(bakt=None, both=1) % PIP(bakt=None, both=1, S='PIP3') >> PDK1(bakt=None, both=None) + PIP(bakt=None, both=None, S='PIP3'), kf)
+
+# AKT-PDK1 Release of AKTPP from PIP3 (this may not be needed because of binding table above)
+    Rule('AKT_PDK1_unbind', AKT(bpip3=1, both=None, S='P') % PIP(bakt=1, both=2, S='PIP3') % PDK1(bakt=None, both=2) >> AKT(bpip3=None, both=None, S='PP') + PDK1(bakt=None, both=1) % PIP(bakt=None, both=1, S='PIP3'), kf)
+
+# AKT:P-PP2A-III dissociate (this may not be needed to due to catalyze_state macro)
+    Rule('AKT_PP2A_III_unbind', AKT(bpip3=None, both=1, S='P') % PP2A_III(bakt=1) >> AKT(bpip3=None, both=None, S='U') + PP2A_III(bakt=None), kf)
+
+# PIP3-PDK1 dissociate to PIP3 and PDK1 (this may not be needed due to catalyze_state macro)
+    Rule('PIP3_PDK1_unbind', PIP(bakt=None, both=1, S='PIP3') % PDK1(bakt=None, both=1) >> PIP(bakt=None, both=None, S='PIP3') + PDK1(bakt=None, both=None), kf)
+
+def crosstalk_monomers():
+    Monomer('Pase9t', ['bgab1'])
+    alias_model_components()
+def crosstalk_initial():
+    Parameter('Pase9t_0', 0)
+
+def crosstalk_events():
+    #ERK:P:P phosphorylates GAP-GRB2-GAB1:P (making it unable to bind PI3K)
+    catalyze_state(ERK(st='PP'), 'b', GAB1(bgrb2=ANY, bpi3k=None, bpi3k2=None, bpi3k3=None, bpi3k4=None, bpi3k5=None, bpi3k6=None), 'bERKPP', 'S', 'P', 'PP', (1e-5, 1e-1, 1e-1))
+
+    #GAP-GRB2-GAB1:P:P is dephosphorylated by Pase9t
+    catalyze_state(Pase9t(), 'bgab1', GAB1(bgrb2=ANY), 'bPase9t', 'S', 'PP', 'P', (1e-5, 1e-1, 1e-2))
+
+    #ERK:P:P phosphorylates GRB2-SOS, preventing RAS-GDP->RAS-GTP conversion
+    catalyze_state(ERK(st='PP'), 'b', SOS(bgrb=ANY, bras=None), 'bERKPP', 'st', 'U', 'P', (1e-5, 1e-1, 1e-1))
+
+    #AKT:P:P phosphorylates RAF:P at Ser295, preventing MEK phosphorylation.
+    catalyze_state(AKT(S='PP', bpip3=None), 'both', RAF(st='P'), 'b', 'ser295', 'U', 'P', (1e-5, 1e-1, 1e-1))
+
+    #RAS-GTP binds PI3K
+    bind(RAS(bsos=None, braf=None, st='GTP'), 'bpi3k', PI3K(bgab1=None, bpip=None), 'bras', [1e-5, 1e-1])
+
+    #RAS-GTP-PI3K binds PIP2
+    bind(PI3K(bgab1=None, bpip=None, bras=ANY), 'bpip', PIP(bakt=None, both=None, bpi3k=None, S='PIP2'), 'bpi3k',
+         [1e-5, 1e-1])
+
+    #RAS-GTP-PI3K-PIP2 disassociates to give PIP3
+    Rule('RASGTPPI3KcatPIP',
+         RAS(bsos=None, braf=None, st='GTP', bpi3k=1) % PI3K(bgab1=None, bpip=2, bras=1) % PIP(bakt=None, both=None, bpi3k=2, S='PIP2') >>
+         RAS(bsos=None, braf=None, st='GTP', bpi3k=1) % PI3K(bgab1=None, bpip=None, bras=1) + PIP(bakt=None, both=None, bpi3k=None, S='PIP3'),
+         Parameter('RASGTPPI3K_kc', 1e-1))
+    

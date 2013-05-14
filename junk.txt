@@ -1,0 +1,170 @@
+begin parameters
+  kf                                           1.000000e-05
+  kr                                           1.000000e-03
+  kcd                                          1.000000e-01
+  bind_GRB2_GAPANY_kf                          1.670000e-05
+  bind_GRB2_GAPANY_kr                          5.500000e-01
+  bind_GRB2_GAB1_kf                            6.670000e-05
+  bind_GRB2_GAB1_kr                            1.000000e-01
+  bind_SHP2_GAB1P_to_SHP2GAB1P_kf              1.000000e-05
+  bind_SHP2_GAB1P_to_SHP2GAB1P_kr              1.000000e-01
+  catalyze_SHP2GAB1P_to_SHP2_GAB1U_kc          1.000000e-02
+  bind_PIPPIP3_AKTU_kf                         1.000000e-05
+  bind_PIPPIP3_AKTU_kr                         1.000000e-03
+  bind_PIPPIP3_AKTP_kf                         1.000000e-05
+  bind_PIPPIP3_AKTP_kr                         1.000000e-03
+  bind_PIPPIP3_AKTPP_kf                        1.000000e-05
+  bind_PIPPIP3_AKTPP_kr                        1.000000e-03
+  bind_PP2A_III_AKTP_to_PP2A_IIIAKTP_kf        1.000000e-05
+  bind_PP2A_III_AKTP_to_PP2A_IIIAKTP_kr        1.000000e-03
+  catalyze_PP2A_IIIAKTP_to_PP2A_III_AKTU_kc    1.000000e-03
+  bind_PP2A_III_AKTPP_to_PP2A_IIIAKTPP_kf      1.000000e-05
+  bind_PP2A_III_AKTPP_to_PP2A_IIIAKTPP_kr      1.000000e-03
+  catalyze_PP2A_IIIAKTPP_to_PP2A_III_AKTP_kc   1.000000e-03
+  bind_PTEN_PIPPIP3_to_PTENPIPPIP3_kf          1.000000e-05
+  bind_PTEN_PIPPIP3_to_PTENPIPPIP3_kr          1.000000e-03
+  catalyze_PTENPIPPIP3_to_PTEN_PIPPIP2_kc      1.000000e-03
+  bind_SHP_PIPPIP3_to_SHPPIPPIP3_kf            1.000000e-05
+  bind_SHP_PIPPIP3_to_SHPPIPPIP3_kr            1.000000e-03
+  catalyze_SHPPIPPIP3_to_SHP_PIPPIP2_kc        1.000000e-03
+  EGF_0                                        5.000000e-09
+  HRG_0                                        0.000000e+00
+  erbb1_0                                      1.080000e+06
+  erbb2_0                                      4.620000e+05
+  erbb3_0                                      6.230000e+03
+  erbb4_0                                      7.940000e+02
+  ATP_0                                        1.200000e+09
+  DEP_0                                        7.000000e+04
+  GAP_0                                        1.200000e+04
+  SHC_0                                        1.010000e+06
+  GRB2_0                                       5.100000e+04
+  SOS_0                                        6.630000e+04
+  RAS_0                                        1.140000e+07
+  RAF_0                                        4.000000e+04
+  MEK_0                                        2.200000e+07
+  ERK_0                                        2.100000e+07
+  PP1_0                                        4.000000e+04
+  PP2_0                                        4.000000e+04
+  PP3_0                                        1.000000e+07
+  GAB1_0                                       9.486830e+04
+  PI3K_0                                       3.556560e+07
+  SHP2_0                                       1.000000e+06
+  PIP_0                                        9.000000e+03
+  PTEN_0                                       5.000000e+04
+  SHP_0                                        7.000000e+04
+  AKT_0                                        9.050000e+06
+  PDK1_0                                       9.500000e+06
+  PP2A_III_0                                   4.500000e+05
+end parameters
+
+begin molecule types
+  EGF(b)
+  HRG(b)
+  erbb(bl,bd,b,ty~1~2~3~4,st~U~P,loc~C~E)
+  DEP(b)
+  ATP(b)
+  ADP()
+  GAP(bd,b,bgrb2)
+  SHC(bgap,bgrb,batp,st~U~P)
+  GRB2(b,bsos,bgap,bgab1)
+  SOS(bgrb,bras)
+  RAS(bsos,braf,st~GDP~GTP)
+  RAF(b,st~U~P)
+  PP1(b)
+  PP2(b)
+  PP3(b)
+  MEK(b,st~U~P~PP)
+  ERK(b,st~U~P~PP)
+  GAB1(bgrb2,bshp2,bpi3k,batp,bERKPP,bPase9t,S~U~P~PP)
+  PI3K(bgab1,bpip)
+  SHP2(bgab1)
+  PIP(bakt,both,S~PIP2~PIP3)
+  PTEN(bpip3,both)
+  SHP(bpip3,both)
+  AKT(bpip3,both,S~U~P~PP)
+  PDK1(bakt,both)
+  PP2A_III(bakt,both)
+end molecule types
+
+begin reaction rules
+  bind_GRB2_GAPANY:                         GRB2(b,bsos,bgap) + GAP(bd!+,b,bgrb2) <-> GRB2(b,bsos,bgap!1).GAP(bd!+,b,bgrb2!1)    bind_GRB2_GAPANY_kf, bind_GRB2_GAPANY_kr
+  bind_GRB2_GAB1:                           GRB2(b,bsos,bgap!1,bgab1) + GAB1(bgrb2,bshp2,bpi3k,batp,bERKPP,bPase9t) <-> GRB2(b,bsos,bgap!1,bgab1!1).GAB1(bgrb2!1,bshp2,bpi3k,batp,bERKPP,bPase9t)    bind_GRB2_GAB1_kf, bind_GRB2_GAB1_kr
+  bind_SHP2_GAB1P_to_SHP2GAB1P:             SHP2(bgab1) + GAB1(bgrb2!1,bshp2,bpi3k,batp,bERKPP,bPase9t,S~P) <-> SHP2(bgab1!1).GAB1(bgrb2!1,bshp2!1,bpi3k,batp,bERKPP,bPase9t,S~P)    bind_SHP2_GAB1P_to_SHP2GAB1P_kf, bind_SHP2_GAB1P_to_SHP2GAB1P_kr
+  catalyze_SHP2GAB1P_to_SHP2_GAB1U:         SHP2(bgab1!1).GAB1(bgrb2!1,bshp2!1,bpi3k,batp,bERKPP,bPase9t,S~P) -> SHP2(bgab1) + GAB1(bgrb2!1,bshp2,bpi3k,batp,bERKPP,bPase9t,S~U)    catalyze_SHP2GAB1P_to_SHP2_GAB1U_kc
+  bind_PIPPIP3_AKTU:                        PIP(bakt,S~PIP3) + AKT(bpip3,S~U) <-> PIP(bakt!1,S~PIP3).AKT(bpip3!1,S~U)    bind_PIPPIP3_AKTU_kf, bind_PIPPIP3_AKTU_kr
+  bind_PIPPIP3_AKTP:                        PIP(bakt,S~PIP3) + AKT(bpip3,S~P) <-> PIP(bakt!1,S~PIP3).AKT(bpip3!1,S~P)    bind_PIPPIP3_AKTP_kf, bind_PIPPIP3_AKTP_kr
+  bind_PIPPIP3_AKTPP:                       PIP(bakt,S~PIP3) + AKT(bpip3,S~PP) <-> PIP(bakt!1,S~PIP3).AKT(bpip3!1,S~PP)    bind_PIPPIP3_AKTPP_kf, bind_PIPPIP3_AKTPP_kr
+  bind_PDK1_AKTUANY_to_PDK1AKTUANY:         PDK1(bakt) + AKT(bpip3!+,both,S~U) <-> PDK1(bakt!1).AKT(bpip3!+,both!1,S~U)    kf, kr
+  catalyze_PDK1AKTUANY_to_PDK1_AKTPANY:     PDK1(bakt!1).AKT(bpip3!+,both!1,S~U) -> PDK1(bakt) + AKT(bpip3!+,both,S~P)    kcd
+  bind_PDK1_AKTPANY_to_PDK1AKTPANY:         PDK1(bakt) + AKT(bpip3!+,both,S~P) <-> PDK1(bakt!1).AKT(bpip3!+,both!1,S~P)    kf, kr
+  catalyze_PDK1AKTPANY_to_PDK1_AKTPPANY:    PDK1(bakt!1).AKT(bpip3!+,both!1,S~P) -> PDK1(bakt) + AKT(bpip3!+,both,S~PP)    kcd
+  bind_PP2A_III_AKTP_to_PP2A_IIIAKTP:       PP2A_III(bakt) + AKT(both,S~P) <-> PP2A_III(bakt!1).AKT(both!1,S~P)    bind_PP2A_III_AKTP_to_PP2A_IIIAKTP_kf, bind_PP2A_III_AKTP_to_PP2A_IIIAKTP_kr
+  catalyze_PP2A_IIIAKTP_to_PP2A_III_AKTU:   PP2A_III(bakt!1).AKT(both!1,S~P) -> PP2A_III(bakt) + AKT(both,S~U)    catalyze_PP2A_IIIAKTP_to_PP2A_III_AKTU_kc
+  bind_PP2A_III_AKTPP_to_PP2A_IIIAKTPP:     PP2A_III(bakt) + AKT(both,S~PP) <-> PP2A_III(bakt!1).AKT(both!1,S~PP)    bind_PP2A_III_AKTPP_to_PP2A_IIIAKTPP_kf, bind_PP2A_III_AKTPP_to_PP2A_IIIAKTPP_kr
+  catalyze_PP2A_IIIAKTPP_to_PP2A_III_AKTP:  PP2A_III(bakt!1).AKT(both!1,S~PP) -> PP2A_III(bakt) + AKT(both,S~P)    catalyze_PP2A_IIIAKTPP_to_PP2A_III_AKTP_kc
+  bind_PTEN_PIPPIP3_to_PTENPIPPIP3:         PTEN(bpip3) + PIP(both,S~PIP3) <-> PTEN(bpip3!1).PIP(both!1,S~PIP3)    bind_PTEN_PIPPIP3_to_PTENPIPPIP3_kf, bind_PTEN_PIPPIP3_to_PTENPIPPIP3_kr
+  catalyze_PTENPIPPIP3_to_PTEN_PIPPIP2:     PTEN(bpip3!1).PIP(both!1,S~PIP3) -> PTEN(bpip3) + PIP(both,S~PIP2)    catalyze_PTENPIPPIP3_to_PTEN_PIPPIP2_kc
+  bind_SHP_PIPPIP3_to_SHPPIPPIP3:           SHP(bpip3) + PIP(both,S~PIP3) <-> SHP(bpip3!1).PIP(both!1,S~PIP3)    bind_SHP_PIPPIP3_to_SHPPIPPIP3_kf, bind_SHP_PIPPIP3_to_SHPPIPPIP3_kr
+  catalyze_SHPPIPPIP3_to_SHP_PIPPIP2:       SHP(bpip3!1).PIP(both!1,S~PIP3) -> SHP(bpip3) + PIP(both,S~PIP2)    catalyze_SHPPIPPIP3_to_SHP_PIPPIP2_kc
+  AKT_PDK1_undbind:                         AKT(bpip3!+,both,S~U).PIP(bakt!1,both!2,S~PIP3).PDK1(bakt,both!2) -> AKT(bpip3,both,S~P) + PDK1(bakt,both!1).PIP(bakt,both!1,S~PIP3)    kf
+  PDK1_PIP3_unbind:                         PDK1(bakt,both!1).PIP(bakt,both!1,S~PIP3) -> PDK1(bakt,both) + PIP(bakt,both,S~PIP3)    kf
+  AKT_PDK1_unbind:                          AKT(bpip3!1,both,S~P).PIP(bakt!1,both!2,S~PIP3).PDK1(bakt,both!2) -> AKT(bpip3,both,S~PP) + PDK1(bakt,both!1).PIP(bakt,both!1,S~PIP3)    kf
+  AKT_PP2A_III_unbind:                      AKT(bpip3,both!1,S~P).PP2A_III(bakt!1) -> AKT(bpip3,both,S~U) + PP2A_III(bakt)    kf
+  PIP3_PDK1_unbind:                         PIP(bakt,both!1,S~PIP3).PDK1(bakt,both!1) -> PIP(bakt,both,S~PIP3) + PDK1(bakt,both)    kf
+end reaction rules
+
+begin observables
+  Molecules ErbB1_ErbB1        erbb(bd!1,ty~1,st~U,loc~C).erbb(bd!1,ty~1,st~U,loc~C)
+  Molecules EGF_any            EGF(b!+)
+  Molecules obsPIP3            PIP(bakt,both,S~PIP3)
+  Molecules obsPTEN            PTEN(bpip3)
+  Molecules obsSHP             SHP(bpip3)
+  Molecules obsPIPPTEN         PIP(bakt,both!1,S~PIP3).PTEN(bpip3!1)
+  Molecules obsPIPSHP          PIP(bakt,both!1,S~PIP3).SHP(bpip3!1)
+  Molecules obsPDK1            PDK1(bakt,both)
+  Molecules obsAKT             AKT(bpip3,both,S~U)
+  Molecules obsAKTPIP          AKT(bpip3!1,both,S~U).PIP(bakt!1,both,S~PIP3)
+  Molecules obsAKTPDK1PIP      AKT(bpip3,both!1,S~U).PDK1(bakt,both!2).PIP(bakt,both!1,S~PIP3)
+  Molecules obsAKTP            AKT(bpip3,both,S~P)
+  Molecules obsAKTPPIP         AKT(bpip3!1,both,S~P).PIP(bakt!1,both,S~PIP3)
+  Molecules obsPIP2            PIP(bakt,both,S~PIP2)
+  Molecules obsPP2A_III        PP2A_III(bakt)
+  Molecules obsAKTPP           AKT(bpip3,both,S~PP)
+  Molecules obsPP2A_IIIAKTPP   AKT(bpip3,both!1,S~PP).PP2A_III(bakt!1)
+  Molecules obsAKTPPDK1PIP     AKT(bpip3!1,both,S~P).PIP(bakt!1,both!2,S~PIP3).PDK1(both!2)
+  Molecules obsGAB1_unbound    GAB1(bgrb2,bshp2,bpi3k,batp,bERKPP,bPase9t,S~U)
+  Molecules obsGAB1_bound      GAB1(bgrb2!1,bshp2,bpi3k,batp,bERKPP,bPase9t,S~U)
+  Molecules obsGAB1P           GAB1(bgrb2!1,bshp2,bpi3k,batp,bERKPP,bPase9t,S~P)
+end observables
+
+begin species
+  EGF(b)                                            EGF_0
+  HRG(b)                                            HRG_0
+  erbb(bl,bd,b,ty~1,st~U,loc~C)                     erbb1_0
+  erbb(bl,bd,b,ty~2,st~U,loc~C)                     erbb2_0
+  erbb(bl,bd,b,ty~3,st~U,loc~C)                     erbb3_0
+  erbb(bl,bd,b,ty~4,st~U,loc~C)                     erbb4_0
+  ATP(b)                                            ATP_0
+  DEP(b)                                            DEP_0
+  GAP(bd,b,bgrb2)                                   GAP_0
+  SHC(bgap,bgrb,batp,st~U)                          SHC_0
+  GRB2(b,bsos,bgap,bgab1)                           GRB2_0
+  SOS(bgrb,bras)                                    SOS_0
+  RAS(bsos,braf,st~GDP)                             RAS_0
+  RAF(b,st~U)                                       RAF_0
+  MEK(b,st~U)                                       MEK_0
+  ERK(b,st~U)                                       ERK_0
+  PP1(b)                                            PP1_0
+  PP2(b)                                            PP2_0
+  PP3(b)                                            PP3_0
+  GAB1(bgrb2,bshp2,bpi3k,batp,bERKPP,bPase9t,S~U)   GAB1_0
+  PI3K(bgab1,bpip)                                  PI3K_0
+  SHP2(bgab1)                                       SHP2_0
+  PIP(bakt,both,S~PIP3)                             PIP_0
+  PTEN(bpip3,both)                                  PTEN_0
+  SHP(bpip3,both)                                   SHP_0
+  AKT(bpip3,both,S~U)                               AKT_0
+  PDK1(bakt,both)                                   PDK1_0
+  PP2A_III(bakt,both)                               PP2A_III_0
+end species
+
